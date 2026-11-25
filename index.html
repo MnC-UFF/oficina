@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Entrar</title>
+<style>
+  :root { --bg:#fed652; --panel:#015d8c; --head:#013f60; --red:#cd4245; --ink:#10304a; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--ink);
+         font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding:16px; }
+  form { width:100%; max-width:360px; background:var(--panel); color:#fff; }
+  h1 { margin:0; padding:14px 18px; background:var(--head); font-size:20px; }
+  .in { padding:18px; display:grid; gap:12px; }
+  label { display:grid; gap:4px; font-weight:600; font-size:14px; }
+  input { font:inherit; padding:10px 12px; border:0; border-radius:0; color:var(--ink); background:#fff; width:100%; }
+  input:focus { outline:3px solid var(--bg); }
+  button { font:inherit; font-weight:700; padding:11px; border:0; border-radius:0; background:var(--red); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.7; cursor:wait; }
+  .err { background:#fde3e3; color:#7a1214; padding:8px 10px; font-size:14px; }
+  .err[hidden] { display:none; }
+</style>
+</head>
+<body>
+<form id="f" autocomplete="on">
+  <h1>Área restrita</h1>
+  <div class="in">
+    <div class="err" id="err" role="alert" hidden></div>
+    <label>Usuário<input id="u" name="username" autocomplete="username" required autofocus></label>
+    <label>Senha<input id="p" name="password" type="password" autocomplete="current-password" required></label>
+    <button id="b" type="submit">Entrar</button>
+  </div>
+</form>
+<script>
+/* Porta de entrada: todo o conteúdo do app está criptografado (AES-GCM 256) na pasta d/.
+   A chave vem do usuário + senha (PBKDF2); sem eles os arquivos não podem ser lidos.
+   Nada disso faz parte do código do app. */
+(() => {
+  const SK = 'gate-key';
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const $ = id => document.getElementById(id);
+  const showErr = m => { $('err').textContent = m; $('err').hidden = !m; };
+  const getBin = async n => { const r = await fetch('d/' + n, { cache: 'no-cache' }); if (!r.ok) throw new Error('rede'); return r.arrayBuffer(); };
+  const dec = (key, iv, buf) => crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(iv) }, key, buf);
+  let gate;
+
+  async function deriveKey(user, pass) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(user + '\n' + pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(gate.salt), iterations: gate.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+  }
+
+  async function open(key) {
+    const manifest = JSON.parse(new TextDecoder().decode(await dec(key, gate.miv, await getBin('m.bin'))));
+    const urls = {};
+    await Promise.all(Object.entries(manifest).filter(([p]) => p !== 'index.html').map(async ([p, m]) => {
+      urls[p] = URL.createObjectURL(new Blob([await dec(key, m.iv, await getBin(m.n))], { type: m.t }));
+    }));
+    let html = new TextDecoder().decode(await dec(key, manifest['index.html'].iv, await getBin(manifest['index.html'].n)));
+    const cdn = {
+      'https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js': 'vendor/three.min.js',
+      'https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js': 'vendor/OrbitControls.js',
+      'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js': 'vendor/jspdf.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js': 'vendor/qrcode.js'
+    };
+    for (const [u, p] of Object.entries(cdn)) if (urls[p]) html = html.split('"' + u + '"').join('"' + urls[p] + '"');
+    html = html.replace(/(src|href)="((?:js|data|media)\/[^"]+)"/g, (all, a, p) => urls[p] ? a + '="' + urls[p] + '"' : all);
+    html = html.replace('<head>', '<head>\n<meta name="robots" content="noindex, nofollow">');
+    document.open(); document.write(html); document.close();
+  }
+
+  async function start() {
+    gate = await (await fetch('gate.json', { cache: 'no-cache' })).json();
+    const saved = sessionStorage.getItem(SK);
+    if (saved) {
+      try { await open(await crypto.subtle.importKey('raw', b64(saved), 'AES-GCM', false, ['decrypt'])); return; }
+      catch (e) { sessionStorage.removeItem(SK); }
+    }
+  }
+
+  $('f').addEventListener('submit', async ev => {
+    ev.preventDefault(); showErr(''); $('b').disabled = true; $('b').textContent = 'Abrindo...';
+    try {
+      if (!gate) gate = await (await fetch('gate.json', { cache: 'no-cache' })).json();
+      const key = await deriveKey($('u').value.trim(), $('p').value);
+      let manifestOk = true;
+      try { await dec(key, gate.miv, await getBin('m.bin')); } catch (e) { manifestOk = false; }
+      if (!manifestOk) { showErr('Usuário ou senha incorretos.'); return; }
+      try { sessionStorage.setItem(SK, btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey('raw', key))))); } catch (e) {}
+      await open(key);
+    } catch (e) {
+      showErr('Não foi possível abrir agora. Verifique a internet e tente de novo.');
+    } finally { const b = $('b'); if (b) { b.disabled = false; b.textContent = 'Entrar'; } }
+  });
+  start().catch(() => {});
+})();
+</script>
+</body>
+</html>
