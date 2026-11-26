@@ -273,7 +273,6 @@
   dialog#tutorial video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #fed652; }
   .tut-note { margin: 0; padding: 8px 16px 10px; font-size: .9rem; }
   dialog#about a { color: var(--panel); }
-  dialog#about mark.credit { background: var(--sun); color: var(--ink); padding: 0 4px; font-weight: 700; }
   dialog#printInfo { background: #ffffff; color: var(--ink); border: 4px solid var(--panel); border-radius: 0; padding: 0; width: min(520px, calc(100vw - 32px)); max-width: none; }
   dialog#printInfo::backdrop { background: rgba(10, 10, 25, .55); }
   .info-body { padding: 4px 16px 14px; line-height: 1.5; }
@@ -429,9 +428,91 @@
   .pip-tab { position: fixed; z-index: 25; top: calc(8px + env(safe-area-inset-top, 0px)); left: calc(8px + env(safe-area-inset-left, 0px));
     background: var(--panel); color: var(--on-panel); border: 0; padding: 8px 12px; font: inherit; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  /* ---------- opening screen (about 10 s): yellow, the project logo, a blue-bordered bar that fills with red blocks,
+     "Carregando..." in blue, then "Bem-vindo!" in red and a fade into the app. Tapping skips it. ---------- */
+  #splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    background: #fed652; text-align: center; padding: 24px; transition: opacity .7s ease, visibility .7s; cursor: pointer; }
+  #splash.gone { opacity: 0; visibility: hidden; }
+  #splash img { width: min(180px, 45vw); height: auto; min-height: 1px; }
+  #splash .sp-bar { display: flex; gap: 4px; width: min(340px, 80vw); height: 28px; padding: 4px; background: #ffffff; border: 4px solid #015d8c; box-sizing: content-box; }
+  #splash .sp-bar i { flex: 1 1 0; background: #cd4245; opacity: 0; transform: scaleY(.4); transition: opacity .18s, transform .18s; }
+  #splash .sp-bar i.on { opacity: 1; transform: none; }
+  #splash .sp-msg { margin: 0; min-height: 1.6em; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; }
+  #splash .sp-msg .loading { color: #015d8c; }
+  #splash .sp-msg .hello { display: none; color: #cd4245; font-size: 2rem; }
+  #splash.done .sp-msg .loading { display: none; }
+  #splash.done .sp-msg .hello { display: inline; animation: spPop .45s ease-out; }
+  @keyframes spPop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #splash.done .sp-msg .hello { animation: none; } }
+
+  /* ---------- Placar: like a game scoreboard, in the same frame as the info window ---------- */
+  dialog#placar { background: #ffffff; color: var(--ink); border: 4px solid var(--panel); border-radius: 0; padding: 0; width: min(560px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); }
+  dialog#placar::backdrop { background: rgba(10, 10, 25, .55); }
+  .pl-big { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
+  .pl-stat { background: var(--panel); color: #ffffff; padding: 10px 8px; text-align: center; }
+  .pl-stat b { display: block; font-family: var(--font-display); font-size: 2rem; line-height: 1; color: #fed652; }
+  .pl-stat span { font-size: .82rem; font-weight: 700; }
+  .pl-split { margin: 10px 0 0; }
+  .pl-split .lbl { display: flex; justify-content: space-between; font-size: .82rem; font-weight: 700; }
+  .pl-split .bar { display: flex; height: 14px; background: #e5e9ec; margin-top: 3px; }
+  .pl-split .bar i { display: block; height: 100%; background: var(--panel); }
+  .pl-split .bar i + i { background: var(--red); }
+  .pl-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; }
+  .pl-cat { border: 2px solid var(--panel); }
+  .pl-cat h3 { margin: 0; background: var(--panel-head); color: #ffffff; font-size: .85rem; padding: 4px 8px; font-family: var(--font-display); }
+  .pl-cat ol { list-style: none; margin: 0; padding: 4px 6px 6px; }
+  .pl-cat li { display: flex; align-items: center; gap: 6px; font-size: .84rem; padding: 2px 0; }
+  .pl-cat li .md { flex: 0 0 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; font-weight: 800; font-size: .75rem; color: #3a2a00; background: #fed652; }
+  .pl-cat li:nth-child(2) .md { background: #d5dbe0; } .pl-cat li:nth-child(3) .md { background: #e3a66b; }
+  .pl-cat li .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl-cat li .ct { font-weight: 700; color: var(--panel); }
+  .pl-cat li .chip { flex: 0 0 18px; height: 18px; border: 1px solid rgba(0, 0, 0, .3); }
+  .pl-cat li .chip.wide { flex: 1 1 auto; height: 18px; }
+  .pl-note { font-size: .78rem; color: #4a5560; margin-top: 12px; }
+  .pl-empty { padding: 18px 0 6px; text-align: center; font-weight: 700; }
+  html[data-ui="escuro"] dialog#placar { background: var(--panel); color: var(--ink); border-color: var(--panel-head); }
+  html[data-ui="escuro"] .pl-note { color: var(--muted); }
+  html[data-ui="escuro"] .pl-split .bar { background: rgba(255, 255, 255, .15); }
+  .menu button.menu-row.solo { justify-content: flex-start; }
+
+  /* ---------- cookie notice (only when Google Analytics is set up in js/config.js) ---------- */
+  #consent { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 900; max-width: 640px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--panel); color: #ffffff; border: 3px solid var(--panel-head); padding: 10px 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .28); font-size: .88rem; line-height: 1.4; }
+  #consent[hidden] { display: none; }
+  #consent p { margin: 0; flex: 1 1 260px; }
+  #consent .btns { display: flex; gap: 8px; }
+  #consent .btn { background: #ffffff; color: var(--panel-head); }
+  #consent .btn.primary { background: var(--red); color: #ffffff; }
 </style>
 </head>
 <body>
+<div id="splash" role="status" aria-live="polite" title="Toque para entrar">
+  <img id="splashLogo" alt="Meninas nas Ciências">
+  <div class="sp-bar" aria-hidden="true"></div>
+  <p class="sp-msg"><span class="loading">Carregando...</span><span class="hello">Bem-vindo!</span></p>
+</div>
+<script>
+  // the opening screen is only for show: 20 red blocks fill the bar in about 9 s, then "Bem-vindo!" and the app
+  (function () {
+    var sp = document.getElementById('splash'), bar = sp.querySelector('.sp-bar'), N = 20, k = 0, ended = false, timer = 0;
+    for (var i = 0; i < N; i++) bar.appendChild(document.createElement('i'));
+    var blocks = bar.children;
+    function step() {
+      if (ended) return;
+      if (k < N) { blocks[k++].className = 'on'; timer = setTimeout(step, 250 + Math.random() * 300); }   // a little uneven, like real loading
+      else end();
+    }
+    function end() {
+      if (ended) return; ended = true; clearTimeout(timer);
+      for (var j = 0; j < N; j++) blocks[j].className = 'on';
+      sp.classList.add('done');
+      setTimeout(function () { sp.classList.add('gone'); setTimeout(function () { sp.remove(); }, 800); }, 1200);
+    }
+    timer = setTimeout(step, 250);
+    sp.addEventListener('click', end);
+  })();
+</script>
 
 <main class="page">
   <div class="col col-left">
@@ -486,6 +567,7 @@
       <button class="btn small more-btn" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu" aria-label="Configurações" title="Configurações">&#8943;</button>
       <div class="menu" id="moreMenu" role="menu" aria-label="Configurações" hidden>
         <div class="menu-head"><span>Configurações</span><button type="button" class="btn small more-btn" id="moreClose" aria-label="Fechar as configurações" title="Fechar">&#10005;</button></div>
+        <div class="menu-item"><button type="button" class="menu-row solo" role="menuitem" id="placarBtn">&#127942; Placar</button></div>
         <div class="menu-item has-sub">
           <button type="button" class="menu-row" role="menuitem" aria-haspopup="menu" aria-expanded="false">Cores da página <span class="sub-arrow" aria-hidden="true">&#9666;</span></button>
           <div class="submenu" role="menu" aria-label="Cores da página" data-setting="theme">
@@ -571,6 +653,16 @@
     <p><strong>Uso:</strong> as bonecas e os moldes estão sob a licença <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt-br" target="_blank" rel="noopener license">CC BY-NC-SA 4.0</a>: pode imprimir, usar e adaptar dando o crédito ao projeto Meninas nas Ciências, sem vender.</p>
   </div>
 </dialog>
+<dialog id="placar" class="info-dialog" aria-labelledby="placarTitle">
+  <div class="tut-head"><h2 id="placarTitle">Placar das Cientistas</h2><button class="btn small" id="placarClose" type="button" aria-label="Fechar">&#10005;</button></div>
+  <div class="info-body" id="placarBody"></div>
+</dialog>
+
+<div id="consent" role="region" aria-label="Aviso de cookies" hidden>
+  <p>Usamos cookies do Google Analytics para contar as visitas de forma anônima (cidade e estado, sem nome, idade ou sexo). Você aceita?</p>
+  <div class="btns"><button class="btn small" id="consentNo" type="button">Não aceito</button><button class="btn small primary" id="consentYes" type="button">Aceito</button></div>
+</div>
+
 <dialog id="about" aria-labelledby="aboutTitle">
   <div class="about-head"><img id="aboutLogo" alt="Logo do projeto Meninas nas Ciências"><h2 id="aboutTitle">Sobre o Cientista de Papel</h2><p class="about-version">Versão 1</p></div>
   <p>Quem nunca recortou uma boneca de papel, escolheu a roupa, o cabelo e os acessórios e inventou uma história para ela? O Cientista de Papel parte dessa memória afetiva, de uma brincadeira de infância muito ligada às meninas, compartilhada pela coordenação e pela equipe do projeto <strong>Meninas nas Ciências</strong>.</p>
@@ -582,7 +674,7 @@
     <li><strong>Programação:</strong> Vladimir Martins</li>
     <li><strong>Arte e recursos visuais:</strong> Ashley Campos e Vladimir Martins</li>
     <li><strong>Modelo base da boneca:</strong> TitanPapercraft, comissionado pelo projeto Meninas nas Ciências</li>
-    <li><strong>Música:</strong> <mark class="credit">leemondrop1</mark>, comissionada pelo projeto Meninas nas Ciências</li>
+    <li><strong>Música:</strong> leemondrop1, comissionada pelo projeto Meninas nas Ciências</li>
   </ul>
   <h3>Direitos e uso</h3>
   <ul>
@@ -614,6 +706,8 @@
 <script src="data/layers.js"></script>
 <script src="data/ashley.js"></script>
 <script src="data/brand.js"></script>
+<script>if (window.DOLL_BRAND) document.getElementById('splashLogo') && (document.getElementById('splashLogo').src = window.DOLL_BRAND.logo);</script>
+<script src="js/config.js"></script>
 <script src="js/catalog.js"></script>
 <script src="js/app.js"></script>
 </body>

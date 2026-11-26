@@ -1027,6 +1027,7 @@
         doc.addImage(cv.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, sheet.W, sheet.H, undefined, 'FAST');
       }
       await saveBlob(doc.output('blob'), fileBase() + '-' + state.paper + '.pdf');
+      placarCount();
       toast('PDF pronto. Imprima em tamanho real (100%, sem "ajustar à página").');
     } catch (e) { console.error(e); toast('Não foi possível criar o PDF: ' + e.message); }
     busy(btn, false);
@@ -1399,7 +1400,7 @@
       codeBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); apply(); } });
       scheduleCode();
     }
-    initSettings(); initMusic();
+    initSettings(); initMusic(); initPlacar(); initConsent();
     initThree(); initPip();
     refresh();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => refresh('name'));
@@ -1412,6 +1413,104 @@
     const r = document.documentElement; r.dataset.ui = ui.theme; r.dataset.display = ui.display; r.dataset.text = ui.text;
     const dt = document.getElementById('darkToggle'); if (dt) dt.setAttribute('aria-checked', String(ui.theme === 'escuro'));
     document.querySelectorAll('#moreMenu .submenu').forEach(m => m.querySelectorAll('[role="menuitemradio"]').forEach(b => b.setAttribute('aria-checked', String(ui[m.dataset.setting] === b.dataset.value))));
+  }
+
+  /* ---------------- Placar: anonymous counts of the printed dolls ----------------
+     Only when "Baixar PDF" makes a PDF. What is sent: paper (A4/A3), model (completo/simples), the option chosen in each
+     row, a few colours (a colour that is not one of the ready-made ones goes as "personalizada") and a one-way fingerprint
+     of the doll, so the same doll printed twice counts once among the different dolls. Never the doll code, the name on
+     the stand or anything about the person. The counter is a Cloudflare Worker (placar/), its address in js/config.js. */
+  const CFG = window.CDP_CONFIG || {};
+  const PLACAR = String(CFG.placar || '').replace(/\/+$/, '');
+  const PL_COLORS = ['skin', 'hair', 'eyes', 'shirt', 'pants', 'coat'];
+  const PL_NONE = new Set(['nada', 'nenhum', 'nenhuma', 'nao', 'sem']);
+  const PL_CATS = [   // what the scoreboard shows, top 3 of each
+    ['opt', 'hair', 'Cabelo'], ['col', 'skin', 'Cor da pele'], ['col', 'hair', 'Cor do cabelo'], ['opt', 'mouth', 'Boca'],
+    ['opt', 'print', 'Camisa'], ['opt', 'coat', 'Terceira peça'], ['opt', 'glasses', 'Óculos'], ['opt', 'headwear', 'Na cabeça'],
+  ];
+  async function placarCount() {
+    if (!PLACAR) return;
+    try {
+      const opts = {};
+      for (const sl of CAT.slots) if (sl.options && state.choices[sl.id]) opts[sl.id] = state.choices[sl.id];
+      const cols = {};
+      for (const id of PL_COLORS) {
+        const c = CAT.colors.find(x => x.id === id), v = String(state.colors[id] || '').toLowerCase();
+        if (c && v) cols[id] = (c.swatches || []).concat(c.value).some(w => String(w).toLowerCase() === v) ? v : 'personalizada';
+      }
+      let doll = '';
+      if (window.crypto && crypto.subtle) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uniFP()));
+        doll = [...new Uint8Array(buf)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+      const body = JSON.stringify({ v: 1, paper: state.paper, model: state.model, doll, opts, cols });
+      fetch(PLACAR + '/print', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true, mode: 'cors' }).catch(() => {});
+    } catch (e) { /* counting never gets in the way of printing */ }
+  }
+  function initPlacar() {
+    const dlg = document.getElementById('placar'), btn = document.getElementById('placarBtn'), body = document.getElementById('placarBody');
+    if (!dlg || !btn) return;
+    const close = () => { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); };
+    document.getElementById('placarClose').addEventListener('click', close);
+    btn.addEventListener('click', async () => {
+      document.getElementById('moreClose').click();
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      body.replaceChildren(el('p', { class: 'pl-empty' }, PLACAR ? 'Carregando o placar...' : 'O placar ainda não está ligado nesta versão do app.'));
+      if (!PLACAR) return;
+      try {
+        const r = await fetch(PLACAR + '/stats', { mode: 'cors' }); if (!r.ok) throw new Error(r.status);
+        renderPlacar(body, await r.json());
+      } catch (e) { body.replaceChildren(el('p', { class: 'pl-empty' }, 'Não foi possível carregar o placar agora. Tente de novo mais tarde.')); }
+    });
+  }
+  function renderPlacar(body, d) {
+    const n = d.counts || {}, fmt = x => Number(x || 0).toLocaleString('pt-BR'), total = d.total || 0;
+    const kids = [];
+    kids.push(el('div', { class: 'pl-big' },
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, 'bonecas impressas')),
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, 'bonecas diferentes'))));
+    if (!total) { kids.push(el('p', { class: 'pl-empty' }, 'Ainda não há bonecas impressas. Baixe o PDF da sua e seja a primeira do placar!')); body.replaceChildren(...kids); return; }
+    const split = (title, a, b, la, lb) => { const x = n[a] || 0, y = n[b] || 0, t = x + y || 1, pa = Math.round(100 * x / t);
+      return el('div', { class: 'pl-split' }, el('div', { class: 'lbl' }, el('span', {}, `${la} ${pa}%`), el('span', {}, title), el('span', {}, `${lb} ${100 - pa}%`)),
+        el('div', { class: 'bar', role: 'img', 'aria-label': `${title}: ${la} ${pa}%, ${lb} ${100 - pa}%` }, el('i', { style: `width:${pa}%` }), el('i', { style: `width:${100 - pa}%` }))); };
+    kids.push(split('Papel', 'paper:A4', 'paper:A3', 'A4', 'A3'));
+    kids.push(split('Molde', 'model:completo', 'model:simples', 'Completo', 'Simplificado'));
+    const cats = el('div', { class: 'pl-cats' });
+    for (const [kind, id, title] of PL_CATS) {
+      const pre = `${kind}:${id}:`, sl = CAT.slots.find(s => s.id === id);
+      const top = Object.keys(n).filter(k => k.startsWith(pre) && !PL_NONE.has(k.slice(pre.length))).sort((a, b) => n[b] - n[a]).slice(0, 3);
+      if (!top.length) continue;
+      const ol = el('ol', {});
+      top.forEach((k, i) => { const v = k.slice(pre.length);
+        // a ready-made colour shows as a wide swatch (no hex code to read); a custom one as a rainbow and "Personalizada"
+        const name = kind === 'opt' ? ((sl && sl.options.find(o => o.id === v)) || {}).label || v : (v === 'personalizada' ? 'Personalizada' : '');
+        const chip = kind !== 'col' ? '' : v === 'personalizada' ? el('span', { class: 'chip', style: 'background:conic-gradient(#e8476f,#f2c230,#58b043,#3c64c8,#8e4fd1,#e8476f)' })
+          : el('span', { class: 'chip wide', role: 'img', 'aria-label': 'cor ' + v, style: `background:${v}` });
+        ol.append(el('li', {}, el('span', { class: 'md', 'aria-label': `${i + 1}º lugar` }, String(i + 1)), chip,
+          name ? el('span', { class: 'nm', title: name }, name) : '', el('span', { class: 'ct' }, fmt(n[k])))); });
+      cats.append(el('section', { class: 'pl-cat' }, el('h3', {}, title), ol));
+    }
+    kids.push(cats);
+    kids.push(el('p', { class: 'pl-note' }, 'Conta só as bonecas que alguém baixou em PDF, de forma anônima: não guardamos o código da boneca, o nome na base nem nada sobre quem imprimiu. Cores que não são das prontas aparecem como "cor personalizada".'));
+    body.replaceChildren(...kids);
+  }
+  /* ---------------- Google Analytics, only after consent (LGPD) ---------------- */
+  function initConsent() {
+    const id = String(CFG.ga || '').trim(), bar = document.getElementById('consent');
+    const hosts = Array.isArray(CFG.gaHosts) ? CFG.gaHosts : [];
+    if (!/^G-[A-Z0-9]+$/i.test(id) || !bar || (hosts.length && !hosts.includes(location.hostname))) return;
+    const KEY = 'cientista-de-papel-cookies';
+    let v = null; try { v = localStorage.getItem(KEY); } catch (e) {}
+    const load = () => {
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
+      gtag('js', new Date());
+      gtag('config', id, { allow_google_signals: false, allow_ad_personalization_signals: false });
+      const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id); document.head.appendChild(sc);
+    };
+    const set = x => { try { localStorage.setItem(KEY, x); } catch (e) {} bar.hidden = true; if (x === 'sim') load(); };
+    document.getElementById('consentYes').addEventListener('click', () => set('sim'));
+    document.getElementById('consentNo').addEventListener('click', () => set('nao'));
+    if (v === 'sim') load(); else if (v !== 'nao') bar.hidden = false;
   }
   function initSettings() {
     applyUi();
