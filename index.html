@@ -172,6 +172,11 @@
   .swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, .2); cursor: pointer; padding: 0; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .print-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+  /* the name and QR fields end at the same place, and their colour circles sit in the same column as the circles of the
+     option rows above (54px column, circle at its left); the buttons keep the same 8px spacing as the fields */
+  .name-row { grid-template-columns: minmax(0, 1fr) 54px; gap: 6px; align-items: end; }
+  .name-row .small-col { align-items: flex-start; justify-content: flex-end; }
+  .print-actions { margin-top: 4px; }
   .btn.print-info { flex: 0 0 auto; min-width: 2.6em; padding: 0; justify-content: center; font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 1.05rem; }
   #toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; max-width: min(90vw, 520px); z-index: 20; font-weight: 600; }
   .btn.info { width: 30px; height: 30px; padding: 0; justify-content: center; border-radius: 50%; font-family: Georgia, serif; font-style: italic; font-weight: 700; }
@@ -581,7 +586,7 @@
       <button class="btn small more-btn" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu" aria-label="Configurações" title="Configurações">&#8943;</button>
       <div class="menu" id="moreMenu" role="menu" aria-label="Configurações" hidden>
         <div class="menu-head"><span>Configurações</span><button type="button" class="btn small more-btn" id="moreClose" aria-label="Fechar as configurações" title="Fechar">&#10005;</button></div>
-        <div class="menu-item"><button type="button" class="menu-row solo" role="menuitem" id="placarBtn">&#128202; Métricas</button></div>
+        <div class="menu-item"><button type="button" class="menu-row solo" role="menuitem" id="placarBtn"><span class="sub-arrow" aria-hidden="true">&#9666;</span> Métricas</button></div>
         <div class="menu-item has-sub">
           <button type="button" class="menu-row" role="menuitem" aria-haspopup="menu" aria-expanded="false">Cores da página <span class="sub-arrow" aria-hidden="true">&#9666;</span></button>
           <div class="submenu" role="menu" aria-label="Cores da página" data-setting="theme">
@@ -619,7 +624,7 @@
       <h2 id="printTitle">Imprimir</h2>
       <div class="name-row">
         <label class="small" for="name">Nome na base<input type="text" id="name" maxlength="48" autocomplete="off"></label>
-        <div class="small-col"><span class="small-label">Cor da base</span><span data-color-slot="base"></span></div>
+        <div class="small-col"><span data-color-slot="base"></span></div>
       </div>
       <div class="row2">
         <label class="small" for="nameFont">Letra<select id="nameFont"></select></label>
@@ -631,7 +636,7 @@
       </div>
       <div class="name-row" id="qrBody">
         <label class="small" for="qrUrl">QR code na base (só aparece se tiver um link)<input type="text" id="qrUrl" maxlength="300" autocomplete="off" spellcheck="false" inputmode="url" placeholder="https://..."></label>
-        <div class="small-col"><span class="small-label">Cor do QR</span><span data-color-slot="qr"></span></div>
+        <div class="small-col"><span data-color-slot="qr"></span></div>
       </div>
       <div class="print-actions">
         <button class="btn primary" id="pdf" type="button">Baixar PDF</button>
@@ -673,7 +678,7 @@
 </dialog>
 
 <div id="consent" role="region" aria-label="Aviso de cookies" hidden>
-  <p>Usamos cookies do Google Analytics para contar as visitas de forma anônima (cidade e estado, sem nome, idade ou sexo). Você aceita?</p>
+  <p>Usamos cookies do Google Analytics para contar as visitas ao site, sem identificar você.</p>
   <div class="btns"><button class="btn small" id="consentNo" type="button">Não aceito</button><button class="btn small primary" id="consentYes" type="button">Aceito</button></div>
 </div>
 

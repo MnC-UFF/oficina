@@ -654,8 +654,8 @@
       try {
         if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no clipboard');
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        toast('Foto da boneca copiada para a área de transferência. É só colar (Ctrl+V).');
-      } catch (e) { await saveBlob(blob, fileBase() + '-foto.png'); toast('O navegador não deixou copiar, então a foto foi salva como arquivo.'); }
+        toast('Foto salva na área de transferência.');
+      } catch (e) { await saveBlob(blob, fileBase() + '-foto.png'); toast('Foto salva como arquivo.'); }
     };
     document.getElementById('photo').addEventListener('click', () => takePhoto(false));
     document.getElementById('photoFront').addEventListener('click', () => takePhoto(true));
@@ -1015,7 +1015,7 @@
   }
   const fileBase = () => 'cientista-' + ((state.name || 'boneca').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'boneca');
   async function exportPDF(btn) {
-    if (!window.jspdf) { toast('O PDF precisa de internet para carregar. Use "Imagem PNG".'); return; }
+    if (!window.jspdf) { toast('Sem internet não dá para fazer o PDF.'); return; }
     busy(btn, true);
     try {
       await settle(); const sheet = layoutSheet();
@@ -1028,7 +1028,7 @@
       }
       await saveBlob(doc.output('blob'), fileBase() + '-' + state.paper + '.pdf');
       placarCount();
-      toast('PDF pronto. Imprima em tamanho real (100%, sem "ajustar à página").');
+      toast('PDF pronto.');
     } catch (e) { console.error(e); toast('Não foi possível criar o PDF: ' + e.message); }
     busy(btn, false);
   }
@@ -1041,7 +1041,7 @@
         const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
         await saveBlob(blob, `${fileBase()}-${state.paper}${sheet.pages.length > 1 ? '-folha' + (i + 1) : ''}.png`);
       }
-      toast('Imagem em 300 dpi pronta para imprimir.');
+      toast('Imagem pronta.');
     } catch (e) { console.error(e); toast('Não foi possível criar a imagem: ' + e.message); }
     busy(btn, false);
   }
@@ -1133,7 +1133,7 @@
             fixBlocked();
             if (state.grad) delete state.grad.shirt;
             state.uniform = { id: u.id, fp: uniFP() };
-            save(); init.again(); state.uniform.fp = uniFP(); save(); toast(`Uniforme "${u.label}" aplicado. Dá para mudar cada peça depois.`);
+            save(); init.again(); state.uniform.fp = uniFP(); save(); toast(`Uniforme "${u.label}" aplicado.`);
           });
           row.append(sel);
         } else row.append(el('span', { class: 'stepper empty' }));
@@ -1353,7 +1353,7 @@
       const href = 'mailto:uff.mnc@gmail.com?subject=' + encodeURIComponent('[Cientista de Papel] ' + subject) + '&body=' + encodeURIComponent(body);
       const a = el('a', { href, target: '_blank', rel: 'noopener' }); document.body.append(a); a.click(); a.remove();
       closeFb(); fbForm.reset();
-      toast('Abrindo o seu email com a mensagem pronta. Se não abrir, escreva para uff.mnc@gmail.com.');
+      toast('Abrindo o seu email. Se não abrir, escreva para uff.mnc@gmail.com.');
     });
     // folding / assembly video in a small window
     const tut = document.getElementById('tutorial'), tv = document.getElementById('tutorialVideo');
@@ -1391,16 +1391,16 @@
         codeBox.value = await makeCode(); let ok = false;
         try { await navigator.clipboard.writeText(codeBox.value); ok = true; } catch (e) {
           codeBox.focus(); codeBox.select(); try { ok = document.execCommand('copy'); } catch (e2) {} codeBox.blur(); }
-        toast(ok ? 'Código copiado. Cole onde quiser para enviar.' : 'Selecione o código e copie (Ctrl+C).'); });
+        toast(ok ? 'Código copiado.' : 'Selecione o código e copie (Ctrl+C).'); });
       const apply = async () => {
-        try { state = await readCode(codeBox.value); save(); init.again(); codeBox.blur(); scheduleCode(); toast('Pronto: boneca carregada do código.'); }
-        catch (e) { toast('Esse código não funcionou. Confira se copiou ele inteiro.'); } };
+        try { state = await readCode(codeBox.value); save(); init.again(); codeBox.blur(); scheduleCode(); toast('Boneca carregada.'); }
+        catch (e) { toast('Código inválido. Confira se copiou ele inteiro.'); } };
       document.getElementById('codeApply').addEventListener('click', apply);
       document.getElementById('codePaste').addEventListener('click', async () => {
         codeBox.value = '';
         try { codeBox.value = (await navigator.clipboard.readText()).trim(); }
-        catch (e) { codeBox.focus(); toast('Cole o código no campo (Ctrl+V, ou toque e segure) e aperte Aplicar.'); return; }
-        toast(codeBox.value ? 'Código colado. Aperte Aplicar para montar a boneca.' : 'Não há nenhum código copiado.'); });
+        catch (e) { codeBox.focus(); toast('Cole o código (Ctrl+V) e aperte Aplicar.'); return; }
+        toast(codeBox.value ? 'Código colado. Aperte Aplicar.' : 'Nenhum código copiado.'); });
       codeBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); apply(); } });
       scheduleCode();
     }
