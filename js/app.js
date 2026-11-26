@@ -1571,7 +1571,9 @@
       menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); menu.querySelector('.menu-row').focus(); });
     for (const item of items) {
       const row = item.querySelector('.menu-row');
-      item.addEventListener('mouseenter', () => items.forEach(i => setSub(i, i === item)));   // pointing opens a family
+      // pointing with a mouse opens a family; a finger only opens it on the tap (otherwise the tap's own hover opened it
+      // and the click closed it again, so it took two taps on phones)
+      item.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') items.forEach(i => setSub(i, i === item)); });
       row.addEventListener('click', () => { const o = !item.classList.contains('open'); items.forEach(i => setSub(i, false)); setSub(item, o);
         if (o) item.querySelector('[role="menuitemradio"]').focus(); });
     }
