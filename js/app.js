@@ -1653,12 +1653,16 @@
     };
     // the window (and the tab) never covers the buttons at the top nor the Boneca / Molde tabs: while they are on screen it sits under them
     const bar = document.querySelector('.top-actions');
-    // (the title bar of the panel on screen sits right under the tabs)
-    const headNow = () => { const h = document.querySelector(document.body.dataset.view === 'sheet' ? '.view.sheet .view-head' : '.view.d3 .view-head');
-      return h && h.offsetHeight ? h : document.querySelector('.viewtabs'); };   // on phones the Molde has no title bar: stay under the tabs
-    const place = () => { const h = headNow(), hb = h ? h.getBoundingClientRect().bottom : 0;
-      const top = bar ? Math.max(8, Math.round(bar.getBoundingClientRect().bottom + 8), Math.round(hb + 8)) + 'px' : '';
-      v.style.top = v.classList.contains('pip') ? top : ''; tab.style.top = top; };
+    // the window and its tab sit under whatever is lowest on screen among: the buttons at the top, the Boneca / Molde tabs and the
+    // title bar of the panel being shown; and they line up with the left edge of the panels
+    const tabsBar = document.querySelector('.viewtabs'), views = document.querySelector('.views');
+    const headNow = () => document.querySelector(document.body.dataset.view === 'sheet' ? '.view.sheet .view-head' : '.view.d3 .view-head');
+    const place = () => {
+      const bottoms = [bar, tabsBar, headNow()].filter(e => e && e.offsetHeight).map(e => e.getBoundingClientRect().bottom);
+      const top = Math.max(8, ...bottoms.map(y => Math.round(y + 8))) + 'px';
+      const left = views ? Math.max(8, Math.round(views.getBoundingClientRect().left)) + 'px' : '';
+      v.style.top = v.classList.contains('pip') ? top : ''; v.style.left = v.classList.contains('pip') ? left : '';
+      tab.style.top = top; tab.style.left = left; };
     window.addEventListener('scroll', () => { if (v.classList.contains('pip') || !tab.hidden) place(); }, { passive: true });
     new IntersectionObserver(es => { for (const e of es) inView = e.isIntersecting && e.intersectionRatio >= 0.35; update(); }, { threshold: [0, 0.35, 0.7] }).observe(slot);
     new MutationObserver(update).observe(document.body, { attributes: true, attributeFilter: ['data-view'] });
