@@ -1553,9 +1553,10 @@
       if (!ok) return;
       const x0 = R(row).left;
       dark.style.left = (ri.left - x0) + 'px'; dark.style.width = (rt.right - ri.left) + 'px';
-      // phones: the speaker starts where "Recomeçar" starts; wider screens: it ends where it ends
-      mute.style.left = (matchMedia('(max-width: 820px)').matches ? rr.left - x0 : rr.right - x0 - mute.offsetWidth) + 'px';
-      vol.style.left = (rf.left - x0) + 'px'; vol.style.width = (rm.right - rf.left) + 'px';
+      // the speaker starts where "Recomeçar" starts; the volume runs from just after it to the end of "⋯", closing the block
+      const mx = rr.left - x0, vx = mx + mute.offsetWidth + 10;
+      mute.style.left = mx + 'px';
+      vol.style.left = vx + 'px'; vol.style.width = Math.max(40, rm.right - x0 - vx) + 'px';
     };
     place();
     if (window.ResizeObserver) new ResizeObserver(place).observe(acts);
