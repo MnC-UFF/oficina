@@ -1415,7 +1415,7 @@
     document.querySelectorAll('#moreMenu .submenu').forEach(m => m.querySelectorAll('[role="menuitemradio"]').forEach(b => b.setAttribute('aria-checked', String(ui[m.dataset.setting] === b.dataset.value))));
   }
 
-  /* ---------------- Placar: anonymous counts of the printed dolls ----------------
+  /* ---------------- Métricas: anonymous counts of the printed dolls ----------------
      Only when "Baixar PDF" makes a PDF. What is sent: paper (A4/A3), model (completo/simples), the option chosen in each
      row, a few colours (a colour that is not one of the ready-made ones goes as "personalizada") and a one-way fingerprint
      of the doll, so the same doll printed twice counts once among the different dolls. Never the doll code, the name on
@@ -1455,21 +1455,21 @@
     btn.addEventListener('click', async () => {
       document.getElementById('moreClose').click();
       if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-      body.replaceChildren(el('p', { class: 'pl-empty' }, PLACAR ? 'Carregando o placar...' : 'O placar ainda não está ligado nesta versão do app.'));
+      body.replaceChildren(el('p', { class: 'pl-empty' }, PLACAR ? 'Carregando as métricas...' : 'As métricas ainda não estão ligadas nesta versão do app.'));
       if (!PLACAR) return;
       try {
         const r = await fetch(PLACAR + '/stats', { mode: 'cors' }); if (!r.ok) throw new Error(r.status);
         renderPlacar(body, await r.json());
-      } catch (e) { body.replaceChildren(el('p', { class: 'pl-empty' }, 'Não foi possível carregar o placar agora. Tente de novo mais tarde.')); }
+      } catch (e) { body.replaceChildren(el('p', { class: 'pl-empty' }, 'Não foi possível carregar as métricas agora. Tente de novo mais tarde.')); }
     });
   }
   function renderPlacar(body, d) {
     const n = d.counts || {}, fmt = x => Number(x || 0).toLocaleString('pt-BR'), total = d.total || 0;
     const kids = [];
     kids.push(el('div', { class: 'pl-big' },
-      el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, total === 1 ? 'boneca impressa' : 'bonecas impressas')),
-      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, d.distinct === 1 ? 'boneca diferente' : 'bonecas diferentes'))));
-    if (!total) { kids.push(el('p', { class: 'pl-empty' }, 'Ainda não há bonecas impressas. Baixe o PDF da sua e seja a primeira do placar!')); body.replaceChildren(...kids); return; }
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, total === 1 ? 'Boneca impressa' : 'Bonecas impressas')),
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, d.distinct === 1 ? 'Boneca diferente' : 'Bonecas diferentes'))));
+    if (!total) { kids.push(el('p', { class: 'pl-empty' }, 'Ainda não há bonecas impressas.')); body.replaceChildren(...kids); return; }
     const split = (title, a, b, la, lb) => { const x = n[a] || 0, y = n[b] || 0, t = x + y || 1, pa = Math.round(100 * x / t);
       return el('div', { class: 'pl-split' }, el('div', { class: 'lbl' }, el('span', {}, `${la} ${pa}%`), el('span', {}, title), el('span', {}, `${lb} ${100 - pa}%`)),
         el('div', { class: 'bar', role: 'img', 'aria-label': `${title}: ${la} ${pa}%, ${lb} ${100 - pa}%` }, el('i', { style: `width:${pa}%` }), el('i', { style: `width:${100 - pa}%` }))); };
@@ -1491,7 +1491,6 @@
       cats.append(el('section', { class: 'pl-cat' }, el('h3', {}, title), ol));
     }
     kids.push(cats);
-    kids.push(el('p', { class: 'pl-note' }, 'Conta só as bonecas que alguém baixou em PDF, de forma anônima: não guardamos o código da boneca, o nome na base nem nada sobre quem imprimiu. Cores que não são das prontas aparecem como "cor personalizada".'));
     body.replaceChildren(...kids);
   }
   /* ---------------- Google Analytics, only after consent (LGPD) ---------------- */

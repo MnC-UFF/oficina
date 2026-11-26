@@ -447,7 +447,7 @@
   @keyframes spPop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #splash.done .sp-msg .hello { animation: none; } }
 
-  /* ---------- Placar: like a game scoreboard, in the same frame as the info window ---------- */
+  /* ---------- Métricas (was "Placar"): the scoreboard of printed dolls, in the same frame as the info window ---------- */
   dialog#placar { background: #ffffff; color: var(--ink); border: 4px solid var(--panel); border-radius: 0; padding: 0; width: min(560px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); }
   dialog#placar::backdrop { background: rgba(10, 10, 25, .55); }
   .pl-big { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
@@ -571,7 +571,7 @@
       <button class="btn small more-btn" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu" aria-label="Configurações" title="Configurações">&#8943;</button>
       <div class="menu" id="moreMenu" role="menu" aria-label="Configurações" hidden>
         <div class="menu-head"><span>Configurações</span><button type="button" class="btn small more-btn" id="moreClose" aria-label="Fechar as configurações" title="Fechar">&#10005;</button></div>
-        <div class="menu-item"><button type="button" class="menu-row solo" role="menuitem" id="placarBtn">&#127942; Placar</button></div>
+        <div class="menu-item"><button type="button" class="menu-row solo" role="menuitem" id="placarBtn">&#128202; Métricas</button></div>
         <div class="menu-item has-sub">
           <button type="button" class="menu-row" role="menuitem" aria-haspopup="menu" aria-expanded="false">Cores da página <span class="sub-arrow" aria-hidden="true">&#9666;</span></button>
           <div class="submenu" role="menu" aria-label="Cores da página" data-setting="theme">
@@ -658,7 +658,7 @@
   </div>
 </dialog>
 <dialog id="placar" class="info-dialog" aria-labelledby="placarTitle">
-  <div class="tut-head"><h2 id="placarTitle">Placar das Cientistas</h2><button class="btn small" id="placarClose" type="button" aria-label="Fechar">&#10005;</button></div>
+  <div class="tut-head"><h2 id="placarTitle">Métricas</h2><button class="btn small" id="placarClose" type="button" aria-label="Fechar">&#10005;</button></div>
   <div class="info-body" id="placarBody"></div>
 </dialog>
 
