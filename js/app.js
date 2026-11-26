@@ -1320,9 +1320,13 @@
     // and a colour circle for any colour, like the other colour buttons
     const bgBox = document.getElementById('bg3d'), v3 = document.getElementById('view3d');
     const BGS = [['#ececec', 'Cinza clarinho'], ['#ffffff', 'Branco'], ['#f0a3a0', 'Vermelho claro'], ['#9cc7e6', 'Azul']];
-    const paintBg = () => { const c = state.colors.fundo || '#ececec'; v3.style.background = c;
+    // in dark mode the default light grey shows as a darker grey (the saved choice stays the same)
+    const DARK_BG = '#3b4049';
+    const paintBg = () => { const raw = state.colors.fundo || '#ececec', dark = document.documentElement.dataset.ui === 'escuro';
+      const c = dark && raw.toLowerCase() === '#ececec' ? DARK_BG : raw; v3.style.background = c;
       document.querySelectorAll('[data-dot="fundo"]').forEach(d => { d.style.background = c; });
-      bgBox.querySelectorAll('button[data-bg]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.bg === c))); };
+      bgBox.querySelectorAll('button[data-bg]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.bg === raw));
+        if (b.dataset.bg === '#ececec') { const l = dark ? 'Cinza escuro' : 'Cinza clarinho'; b.style.background = dark ? DARK_BG : '#ececec'; b.title = l; b.setAttribute('aria-label', l); } }); };
     BGS.forEach(([hex, label]) => { const b = el('button', { type: 'button', role: 'radio', title: label, 'aria-label': label, 'data-bg': hex });
       b.style.background = hex; b.addEventListener('click', () => { state.colors.fundo = hex; save();
         document.querySelectorAll('[data-dot="fundo"]').forEach(d => { d.style.background = hex; }); if (state.colorTarget === 'fundo') syncWheel(); paintBg(); }); bgBox.append(b); });
@@ -1413,6 +1417,7 @@
     const r = document.documentElement; r.dataset.ui = ui.theme; r.dataset.display = ui.display; r.dataset.text = ui.text;
     const dt = document.getElementById('darkToggle'); if (dt) dt.setAttribute('aria-checked', String(ui.theme === 'escuro'));
     document.querySelectorAll('#moreMenu .submenu').forEach(m => m.querySelectorAll('[role="menuitemradio"]').forEach(b => b.setAttribute('aria-checked', String(ui[m.dataset.setting] === b.dataset.value))));
+    if (typeof init === 'function' && init.paintBg) init.paintBg();   // the doll's default background follows dark mode
   }
 
   /* ---------------- Métricas: anonymous counts of the printed dolls ----------------
