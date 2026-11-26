@@ -1638,6 +1638,7 @@
     const btn = el('button', { type: 'button', class: 'pip-btn', 'aria-label': 'Esconder a boneca', title: 'Esconder' }, '–');
     const grip = el('span', { class: 'pip-grip', 'aria-hidden': 'true', title: 'Arraste para mudar o tamanho' });
     v.append(btn, grip);
+    document.body.append(tab);   // the tab lives at page level: inside the Boneca card it vanished while the Molde tab was open
     const setW = w => { const max = Math.min(320, window.innerWidth * 0.7); ui.pipW = Math.round(Math.max(96, Math.min(max, w))); v.style.setProperty('--pip-w', ui.pipW + 'px'); };
     setW(ui.pipW || 136);
     let inView = true;
