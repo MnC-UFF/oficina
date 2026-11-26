@@ -1654,7 +1654,8 @@
     // the window (and the tab) never covers the buttons at the top nor the Boneca / Molde tabs: while they are on screen it sits under them
     const bar = document.querySelector('.top-actions');
     // (the title bar of the panel on screen sits right under the tabs)
-    const headNow = () => document.querySelector(document.body.dataset.view === 'sheet' ? '.view.sheet .view-head' : '.view.d3 .view-head');
+    const headNow = () => { const h = document.querySelector(document.body.dataset.view === 'sheet' ? '.view.sheet .view-head' : '.view.d3 .view-head');
+      return h && h.offsetHeight ? h : document.querySelector('.viewtabs'); };   // on phones the Molde has no title bar: stay under the tabs
     const place = () => { const h = headNow(), hb = h ? h.getBoundingClientRect().bottom : 0;
       const top = bar ? Math.max(8, Math.round(bar.getBoundingClientRect().bottom + 8), Math.round(hb + 8)) + 'px' : '';
       v.style.top = v.classList.contains('pip') ? top : ''; tab.style.top = top; };
