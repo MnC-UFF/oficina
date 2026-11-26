@@ -1467,8 +1467,8 @@
     const n = d.counts || {}, fmt = x => Number(x || 0).toLocaleString('pt-BR'), total = d.total || 0;
     const kids = [];
     kids.push(el('div', { class: 'pl-big' },
-      el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, 'bonecas impressas')),
-      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, 'bonecas diferentes'))));
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, total === 1 ? 'boneca impressa' : 'bonecas impressas')),
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, d.distinct === 1 ? 'boneca diferente' : 'bonecas diferentes'))));
     if (!total) { kids.push(el('p', { class: 'pl-empty' }, 'Ainda não há bonecas impressas. Baixe o PDF da sua e seja a primeira do placar!')); body.replaceChildren(...kids); return; }
     const split = (title, a, b, la, lb) => { const x = n[a] || 0, y = n[b] || 0, t = x + y || 1, pa = Math.round(100 * x / t);
       return el('div', { class: 'pl-split' }, el('div', { class: 'lbl' }, el('span', {}, `${la} ${pa}%`), el('span', {}, title), el('span', {}, `${lb} ${100 - pa}%`)),

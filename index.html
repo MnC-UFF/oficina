@@ -489,10 +489,12 @@
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite" title="Toque para entrar">
-  <img id="splashLogo" alt="Meninas nas Ciências">
+  <img id="splashLogo" alt="" style="visibility:hidden" onload="this.style.visibility='visible'">
   <div class="sp-bar" aria-hidden="true"></div>
   <p class="sp-msg"><span class="loading">Carregando...</span><span class="hello">Bem-vindo!</span></p>
 </div>
+<script src="data/brand.js"></script>
+<script>if (window.DOLL_BRAND) document.getElementById('splashLogo').src = window.DOLL_BRAND.logo;</script>
 <script>
   // the opening screen is only for show: 20 red blocks fill the bar in about 9 s, then "Bem-vindo!" and the app
   (function () {
@@ -707,8 +709,6 @@
 <script src="data/model.js"></script>
 <script src="data/layers.js"></script>
 <script src="data/ashley.js"></script>
-<script src="data/brand.js"></script>
-<script>if (window.DOLL_BRAND) document.getElementById('splashLogo') && (document.getElementById('splashLogo').src = window.DOLL_BRAND.logo);</script>
 <script src="js/config.js"></script>
 <script src="js/catalog.js"></script>
 <script src="js/app.js"></script>
