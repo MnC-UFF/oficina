@@ -1045,7 +1045,7 @@
     } catch (e) { console.error(e); toast('Não foi possível criar a imagem: ' + e.message); }
     busy(btn, false);
   }
-  const settle = async () => { while (composing || composeQueued) await new Promise(r => setTimeout(r, 50)); };
+  const settle = async () => { while (composing || (composeQueued && composeQueued.size)) await new Promise(r => setTimeout(r, 50)); };
   function busy(btn, on) { btn.disabled = on; btn.dataset.busy = on ? '1' : ''; }
   let toastTimer = 0;
   function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 5000); }
