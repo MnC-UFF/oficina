@@ -430,7 +430,7 @@
     background: var(--panel); color: var(--on-panel); border: 0; padding: 8px 12px; font: inherit; font-weight: 800; font-size: 0.85rem; cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
-  /* ---------- opening screen (about 10 s): yellow, the project logo, a blue-bordered bar that fills with red blocks,
+  /* ---------- opening screen (about 6 s): yellow, the project logo, a blue-bordered bar that fills with red blocks,
      "Carregando..." in blue, then "Bem-vindo!" in red and a fade into the app. Tapping skips it. ---------- */
   #splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
     background: #fed652; text-align: center; padding: 24px; transition: opacity .7s ease, visibility .7s; cursor: pointer; }
@@ -496,21 +496,22 @@
 <script src="data/brand.js"></script>
 <script>if (window.DOLL_BRAND) document.getElementById('splashLogo').src = window.DOLL_BRAND.logo;</script>
 <script>
-  // the opening screen is only for show: 20 red blocks fill the bar in about 9 s, then "Bem-vindo!" and the app
+  // the opening screen is only for show: 20 red blocks fill the bar in about 5 s, then "Bem-vindo!" and the app
   (function () {
     var sp = document.getElementById('splash'), bar = sp.querySelector('.sp-bar'), N = 20, k = 0, ended = false, timer = 0;
     for (var i = 0; i < N; i++) bar.appendChild(document.createElement('i'));
     var blocks = bar.children;
     function step() {
       if (ended) return;
-      if (k < N) { blocks[k++].className = 'on'; timer = setTimeout(step, 250 + Math.random() * 300); }   // a little uneven, like real loading
+      // rhythm (about 6 s in all): the first 4 slowly, a rush until 2 are left, a short wait, then the last 2
+      if (k < N) { blocks[k++].className = 'on'; timer = setTimeout(step, k < 4 ? 450 : k < N - 2 ? 110 : k === N - 2 ? 700 : 300); }
       else end();
     }
     function end() {
       if (ended) return; ended = true; clearTimeout(timer);
       for (var j = 0; j < N; j++) blocks[j].className = 'on';
       sp.classList.add('done');
-      setTimeout(function () { sp.classList.add('gone'); setTimeout(function () { sp.remove(); }, 800); }, 1200);
+      setTimeout(function () { sp.classList.add('gone'); setTimeout(function () { sp.remove(); }, 800); }, 1000);
     }
     timer = setTimeout(step, 250);
     sp.addEventListener('click', end);
