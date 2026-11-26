@@ -1452,30 +1452,75 @@
       fetch(PLACAR + '/print', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true, mode: 'cors' }).catch(() => {});
     } catch (e) { /* counting never gets in the way of printing */ }
   }
+  // periods, like the analytics sites: this month (default), the last N days, this year, last year, all, or chosen dates
+  const PL_PERIODS = [['mes', 'Este mês'], ['d7', 'Últimos 7 dias'], ['d30', 'Últimos 30 dias'], ['d60', 'Últimos 60 dias'], ['d90', 'Últimos 90 dias'],
+    ['ano', 'Este ano'], ['anoPassado', 'Ano passado'], ['tudo', 'Desde o início'], ['custom', 'Personalizado...']];
+  const brToday = () => { try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); } catch (e) { return new Date().toISOString().slice(0, 10); } };
+  const dayAdd = (iso, n) => { const t = new Date(iso + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const dayBR = iso => iso.split('-').reverse().join('/');
+  function plRange(p, custom) {
+    const t = brToday(), y = +t.slice(0, 4);
+    if (p === 'mes') return [t.slice(0, 8) + '01', t];
+    if (/^d\d+$/.test(p)) return [dayAdd(t, 1 - +p.slice(1)), t];
+    if (p === 'ano') return [y + '-01-01', t];
+    if (p === 'anoPassado') return [(y - 1) + '-01-01', (y - 1) + '-12-31'];
+    if (p === 'custom') return custom;
+    return null;   // desde o início
+  }
+  // one anonymous visit per browser tab, only on the real site (the counter refuses other sites): no cookie and no id is sent
+  function countVisit() {
+    if (!PLACAR || location.origin !== 'https://mnc-uff.github.io') return;
+    try { if (sessionStorage.getItem('cdp-visit')) return; sessionStorage.setItem('cdp-visit', '1'); } catch (e) {}
+    fetch(PLACAR + '/visit', { method: 'POST', keepalive: true, mode: 'cors' }).catch(() => {});
+  }
   function initPlacar() {
+    countVisit();
     const dlg = document.getElementById('placar'), btn = document.getElementById('placarBtn'), body = document.getElementById('placarBody');
     if (!dlg || !btn) return;
     const close = () => { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); };
     document.getElementById('placarClose').addEventListener('click', close);
-    btn.addEventListener('click', async () => {
+    // the period bar stays; only the numbers under it change
+    const sel = el('select', { id: 'plPeriod', 'aria-label': 'Período' }, PL_PERIODS.map(([v, l]) => el('option', { value: v }, l)));
+    const rangeTxt = el('span', { class: 'pl-range' });
+    const fromIn = el('input', { type: 'date', 'aria-label': 'Data inicial' }), toIn = el('input', { type: 'date', 'aria-label': 'Data final' });
+    const apply = el('button', { type: 'button', class: 'btn small primary' }, 'Aplicar');
+    const customBox = el('div', { class: 'pl-custom', hidden: '' }, el('label', {}, 'De', fromIn), el('label', {}, 'Até', toIn), apply);
+    const out = el('div', { class: 'pl-out' });
+    body.replaceChildren(el('div', { class: 'pl-period' }, el('label', {}, 'Período', sel), rangeTxt), customBox, out);
+    let ticket = 0;
+    const load = async () => {
+      const p = sel.value; customBox.hidden = p !== 'custom';
+      if (p === 'custom' && !(fromIn.value && toIn.value)) { const r = plRange('mes'); fromIn.value = fromIn.value || r[0]; toIn.value = toIn.value || r[1]; }
+      let r = plRange(p, [fromIn.value, toIn.value]);
+      if (r && r[0] > r[1]) r = [r[1], r[0]];
+      rangeTxt.textContent = r ? `${dayBR(r[0])} a ${dayBR(r[1])}` : 'Todas as bonecas';
+      out.replaceChildren(el('p', { class: 'pl-empty' }, PLACAR ? 'Carregando as métricas...' : 'As métricas ainda não estão ligadas nesta versão do app.'));
+      if (!PLACAR) return;
+      const my = ++ticket;
+      try {
+        const q = r ? `?from=${r[0]}&to=${r[1]}` : '';
+        const res = await fetch(PLACAR + '/stats' + q, { mode: 'cors' }); if (!res.ok) throw new Error(res.status);
+        const d = await res.json(); if (my === ticket) renderPlacar(out, d, !!r);
+      } catch (e) { if (my === ticket) out.replaceChildren(el('p', { class: 'pl-empty' }, 'Não foi possível carregar as métricas agora. Tente de novo mais tarde.')); }
+    };
+    sel.addEventListener('change', () => { if (sel.value !== 'custom') load(); else { customBox.hidden = false; load(); } });
+    apply.addEventListener('click', load);
+    btn.addEventListener('click', () => {
       document.getElementById('moreClose').click();
       if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-      body.replaceChildren(el('p', { class: 'pl-empty' }, PLACAR ? 'Carregando as métricas...' : 'As métricas ainda não estão ligadas nesta versão do app.'));
-      if (!PLACAR) return;
-      try {
-        const r = await fetch(PLACAR + '/stats', { mode: 'cors' }); if (!r.ok) throw new Error(r.status);
-        renderPlacar(body, await r.json());
-      } catch (e) { body.replaceChildren(el('p', { class: 'pl-empty' }, 'Não foi possível carregar as métricas agora. Tente de novo mais tarde.')); }
+      sel.value = 'mes'; load();   // always opens on this month
     });
   }
-  function renderPlacar(body, d) {
+  function renderPlacar(body, d, period) {
     const n = d.counts || {}, fmt = x => Number(x || 0).toLocaleString('pt-BR'), total = d.total || 0;
     const kids = [];
     kids.push(el('div', { class: 'pl-big' },
+      el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.visits)), el('span', {}, d.visits === 1 ? 'Visita ao site' : 'Visitas ao site')),
       el('div', { class: 'pl-stat' }, el('b', {}, fmt(total)), el('span', {}, total === 1 ? 'Boneca impressa' : 'Bonecas impressas')),
       el('div', { class: 'pl-stat' }, el('b', {}, fmt(d.distinct)), el('span', {}, d.distinct === 1 ? 'Boneca diferente' : 'Bonecas diferentes'))));
-    if (!total) { kids.push(el('p', { class: 'pl-empty' }, 'Ainda não há bonecas impressas.')); body.replaceChildren(...kids); return; }
+    if (!total) { kids.push(el('p', { class: 'pl-empty' }, period ? 'Nenhuma boneca impressa nesse período.' : 'Ainda não há bonecas impressas.')); body.replaceChildren(...kids); return; }
     const split = (title, a, b, la, lb) => { const x = n[a] || 0, y = n[b] || 0, t = x + y || 1, pa = Math.round(100 * x / t);
+      if (!(x + y)) return '';   // nothing recorded for this pair in the period
       return el('div', { class: 'pl-split' }, el('div', { class: 'lbl' }, el('span', {}, `${la} ${pa}%`), el('span', {}, title), el('span', {}, `${lb} ${100 - pa}%`)),
         el('div', { class: 'bar', role: 'img', 'aria-label': `${title}: ${la} ${pa}%, ${lb} ${100 - pa}%` }, el('i', { style: `width:${pa}%` }), el('i', { style: `width:${100 - pa}%` }))); };
     kids.push(split('Papel', 'paper:A4', 'paper:A3', 'A4', 'A3'));
