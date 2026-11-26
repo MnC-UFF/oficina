@@ -1487,6 +1487,32 @@
     Corpo: ['pele', 'uniforme', 'print', 'shirtlen', 'gola', 'sleevecut', 'bottoms', 'pockets', 'belt', 'sapatos', 'coat', 'skirt'],
     'Acessórios': ['headwear', 'glasses', 'earrings', 'piercing', 'browpiercing', 'nosepiercing', 'neck'],
   };
+  /* Lenço solto (véu / dupatta): a loose scarf ({accent}) over the head; the hair shows only at the
+     forehead (middle parting) and the scarf falls on both sides of the face down to the shoulders. The scarf
+     covers the ears (side cloth above the ear layers, z 31). */
+  {
+    const K = '#1d1712';
+    const fab = (d, extra = '') => `<path d="${d}" fill="{accent}" fill-rule="evenodd"/>` + extra +
+      `<path d="${d}" fill="none" stroke="${K}" stroke-width="8" stroke-linejoin="round"/>`;
+    const fold = d => `<path d="${d}" fill="none" stroke="{accent-dark}" stroke-width="14" stroke-linecap="round" opacity="0.8"/>`;
+    const shine = d => `<path d="${d}" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="16" stroke-linecap="round"/>`;
+    const OUT = `M518 40 C260 40 96 180 86 430 C78 650 60 900 40 1120 Q170 1160 300 1120 Q420 1040 518 1030 Q616 1040 736 1120 Q866 1160 996 1120 C976 900 958 650 950 430 C940 180 776 40 518 40 Z`;
+    const HOLE = `M518 222 C340 222 214 300 206 470 L204 760 C212 900 340 960 518 960 C696 960 824 900 832 760 L830 470 C822 300 696 222 518 222 Z`;
+    const front = fab(OUT + ' ' + HOLE,
+      fold('M150 520 C140 760 120 950 104 1100 M250 980 C230 1040 216 1080 206 1110 M886 520 C896 760 916 950 932 1100 M786 980 C806 1040 820 1080 830 1110') +
+      shine('M200 300 Q300 150 470 110 M140 600 C130 800 118 960 104 1100'));
+    const back = fab(`M447 30 C210 30 70 180 64 430 C58 650 44 880 30 1060 Q447 1120 865 1060 C851 880 837 650 831 430 C825 180 684 30 447 30 Z`,
+      fold('M200 400 C190 650 176 850 160 1040 M447 300 L447 1080 M694 400 C704 650 718 850 734 1040') + shine('M150 300 Q250 140 400 100'));
+    const cloth = (r, z = 21) => ({ region: r, z, svg: `<rect x="-10" y="-10" width="1000" height="1000" fill="{accent}"/>` +
+      `<path d="M-10 300 Q300 120 700 260 M-10 620 Q300 420 700 560" fill="none" stroke="{accent-dark}" stroke-width="12" opacity="0.6"/>` });
+    const hairSlot = slots.find(s => s.id === 'hair');
+    const i = hairSlot.options.findIndex(o => o.id === 'turbante');
+    hairSlot.options.splice(i + 1, 0, { id: 'veu', label: 'Lenço solto', pickColors: { accent: '#c23a3a' }, layers: [
+      { region: 'head.front', z: 2, tag: 'hairline', svg: HAIRLINE.risca },
+      cloth('head.top'), cloth('head.side', 31), cloth('head.back'),
+      { region: 'hair.front', z: 30, svg: front }, { region: 'hair.back', z: 30, svg: back }] });
+    colors.find(c => c.id === 'accent').labelIf.push({ if: { hair: ['veu'] }, label: 'Lenço' });
+  }
   const SECS = Object.keys(MENU);
   for (const sl of slots) { const sec = SECS.find(k => MENU[k].includes(sl.id)); if (sec) sl.section = sec; else if (sl.section === 'Roupa') sl.section = 'Corpo'; }
   const rank = sl => SECS.indexOf(sl.section) * 100 + (MENU[sl.section] || []).indexOf(sl.id) + ((MENU[sl.section] || []).includes(sl.id) ? 0 : 99);
